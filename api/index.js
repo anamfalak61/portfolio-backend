@@ -8,8 +8,8 @@ app.use(cors());
 app.use(express.json());
 
 mongoose.connect(process.env.MONGO_URI)
-.then(() => console.log("MongoDB connected"))
-.catch(err => console.error("MongoDB connection error:", err));
+  .then(() => console.log("MongoDB connected"))
+  .catch(err => console.error("MongoDB connection error:", err));
 
 const contactSchema = new mongoose.Schema({
   name: String,
@@ -17,8 +17,15 @@ const contactSchema = new mongoose.Schema({
   message: String,
   createdAt: { type: Date, default: Date.now() },
 });
-
 const Contact = mongoose.model("Contact", contactSchema);
+
+app.get("/", (req, res) => {
+  res.send("Backend Running");
+});
+
+app.get("/api", (req, res) => {
+  res.json({ message: "Backend API is working" });
+});
 
 app.post("/api/contact", async (req, res) => {
   try {
@@ -29,10 +36,6 @@ app.post("/api/contact", async (req, res) => {
     console.error("Error saving message:", error);
     res.status(500).json({ message: "Error saving message" });
   }
-});
-
-app.get("/", (req, res) => {
-  res.send("Backend Running");
 });
 
 const PORT = process.env.PORT || 5000;
