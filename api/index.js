@@ -6,21 +6,13 @@ require("dotenv").config();
 const app = express();
 
 /* ========================
-   CORS FIX (Vercel SAFE)
+   CORS (Vercel SAFE - SIMPLE)
 ======================== */
 app.use(cors({
-  origin: [
-    "http://localhost:5173",
-    "https://portfolio-frontend-cyan-five.vercel.app"
-  ],
-  methods: ["GET", "POST", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-  credentials: false
+  origin: "https://portfolio-frontend-cyan-five.vercel.app"
 }));
 
-// IMPORTANT: preflight fix
-app.options("*", cors());
-
+// JSON middleware
 app.use(express.json());
 
 /* ========================
@@ -53,22 +45,26 @@ const Contact = mongoose.model("Contact", contactSchema);
    ROUTES
 ======================== */
 
-// Root
+// Root route (test)
 app.get("/", (req, res) => {
   res.json({ message: "Backend API working" });
 });
 
-// Projects
+// Projects route
 app.get("/projects", (req, res) => {
   res.json([
     {
       title: "Portfolio Website",
       description: "My personal portfolio"
+    },
+    {
+      title: "E-commerce App",
+      description: "React + Node project"
     }
   ]);
 });
 
-// Contact (SAFE VERSION - NO CRASH)
+// Contact route
 app.post("/contact", async (req, res) => {
   try {
     const newContact = new Contact(req.body);
@@ -80,6 +76,7 @@ app.post("/contact", async (req, res) => {
 
   } catch (error) {
     console.log("Contact Error:", error);
+
     res.status(500).json({
       message: "Server Error",
       error: error.message
