@@ -1,31 +1,42 @@
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
-const nodemailer = require("nodemailer");
 require("dotenv").config();
 
 const app = express();
 
-// CORS
+/* ========================
+   CORS FIX (Vercel SAFE)
+======================== */
 app.use(cors({
   origin: [
     "http://localhost:5173",
     "https://portfolio-frontend-cyan-five.vercel.app"
   ],
   methods: ["GET", "POST", "OPTIONS"],
-  credentials: true
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: false
 }));
 
+// IMPORTANT: preflight fix
 app.options("*", cors());
 
 app.use(express.json());
 
-// MongoDB Connection
-mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log("MongoDB connected"))
-  .catch(err => console.log(err));
+/* ========================
+   MONGODB CONNECTION SAFE
+======================== */
+if (process.env.MONGO_URI) {
+  mongoose.connect(process.env.MONGO_URI)
+    .then(() => console.log("MongoDB connected"))
+    .catch(err => console.log("MongoDB Error:", err));
+} else {
+  console.log("MONGO_URI missing");
+}
 
-// Schema
+/* ========================
+   SCHEMA
+======================== */
 const contactSchema = new mongoose.Schema({
   name: String,
   email: String,
@@ -38,23 +49,16 @@ const contactSchema = new mongoose.Schema({
 
 const Contact = mongoose.model("Contact", contactSchema);
 
-// Nodemailer
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: process.env.GMAIL_USER,
-    pass: process.env.GMAIL_PASS
-  }
-});
+/* ========================
+   ROUTES
+======================== */
 
-// ROOT ROUTE
+// Root
 app.get("/", (req, res) => {
-  res.json({
-    message: "Backend API working"
-  });
+  res.json({ message: "Backend API working" });
 });
 
-// PROJECTS ROUTE
+// Projects
 app.get("/projects", (req, res) => {
   res.json([
     {
@@ -64,36 +68,26 @@ app.get("/projects", (req, res) => {
   ]);
 });
 
-// CONTACT ROUTE
+// Contact (SAFE VERSION - NO CRASH)
 app.post("/contact", async (req, res) => {
   try {
-
     const newContact = new Contact(req.body);
     await newContact.save();
 
-    await transporter.sendMail({
-      from: req.body.email,
-      to: process.env.GMAIL_USER,
-      subject: `New message from ${req.body.name}`,
-      text: `
-Name: ${req.body.name}
-Email: ${req.body.email}
-Message: ${req.body.message}
-      `
-    });
-
     res.status(200).json({
-      message: "Message sent successfully"
+      message: "Message saved successfully"
     });
 
   } catch (error) {
-
-    console.log(error);
-
+    console.log("Contact Error:", error);
     res.status(500).json({
-      message: "Server Error"
+      message: "Server Error",
+      error: error.message
     });
   }
 });
 
+/* ========================
+   EXPORT FOR VERCEL
+======================== */
 module.exports = app;
