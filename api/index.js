@@ -6,29 +6,49 @@ require("dotenv").config();
 const app = express();
 
 /* ========================
-   CORS (Vercel SAFE - SIMPLE)
+   CORS (Vercel SAFE & OPTIMIZED)
 ======================== */
 app.use(cors({
-  origin: "https://portfolio-frontend-cyan-five.vercel.app"
+  origin: "https://portfolio-frontend-cyan-five.vercel.app",
+  methods: ["GET", "POST", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"]
 }));
 
 // JSON middleware
 app.use(express.json());
 
 /* ========================
-   MONGODB CONNECTION SAFE
+   MONGODB CONNECTION (SERVERLESS SAFE)
 ======================== */
-if (process.env.MONGO_URI) {
-  mongoose.connect(process.env.MONGO_URI)
-    .then(() => console.log("MongoDB connected"))
-    .catch(err => console.log("MongoDB Error:", err));
-} else {
-  console.log("MONGO_URI missing");
-}
+// Serverless environments me connection re-use karna zaroori hai
+const connectDB = async () => {
+  if (mongoose.connection.readyState >= 1) {
+    return; // Agar pehle se connected hai toh dubara connect mat karo
+  }
+
+  if (!process.env.MONGO_URI) {
+    console.log("MONGO_URI missing in env variables");
+    return;
+  }
+
+  try {
+    await mongoose.connect(process.env.MONGO_URI);
+    console.log("MongoDB connected successfully");
+  } catch (err) {
+    console.error("MongoDB Connection Error:", err);
+  }
+};
+
+// Har request se pehle database connection check karne ke liye middleware
+app.use(async (req, res, next) => {
+  await connectDB();
+  next();
+});
 
 /* ========================
-   SCHEMA
+   SCHEMA & MODEL
 ======================== */
+// Serverless me model dubara compile hone par error deta hai, isliye yeh check zaroori hai
 const contactSchema = new mongoose.Schema({
   name: String,
   email: String,
@@ -39,7 +59,7 @@ const contactSchema = new mongoose.Schema({
   }
 });
 
-const Contact = mongoose.model("Contact", contactSchema);
+const Contact = mongoose.models.Contact || mongoose.model("Contact", contactSchema);
 
 /* ========================
    ROUTES
@@ -67,7 +87,14 @@ app.get("/projects", (req, res) => {
 // Contact route
 app.post("/contact", async (req, res) => {
   try {
-    const newContact = new Contact(req.body);
+    const { name, email, message } = req.body;
+
+    // Choti si validation takki empty data save na ho
+    if (!name || !email || !message) {
+      return res.status(400).json({ message: "All fields are required" });
+    }
+
+    const newContact = new Contact({ name, email, message });
     await newContact.save();
 
     res.status(200).json({
@@ -75,8 +102,7 @@ app.post("/contact", async (req, res) => {
     });
 
   } catch (error) {
-    console.log("Contact Error:", error);
-
+    console.error("Contact Error:", error);
     res.status(500).json({
       message: "Server Error",
       error: error.message
