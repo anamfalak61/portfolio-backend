@@ -9,7 +9,7 @@ const app = express();
    CORS (Vercel SAFE & OPTIMIZED)
 ======================== */
 app.use(cors({
-  origin:"*",
+  origin:"https://portfolio-backend-black-rho.vercel.app/",
   methods: ["GET", "POST", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"]
 }));
