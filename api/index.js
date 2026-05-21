@@ -1,120 +1,84 @@
-const express = require("express");
-const mongoose = require("mongoose");
-const cors = require("cors");
-require("dotenv").config();
+const express = require('express');
+const cors = require('cors');
+const mongoose = require('mongoose');
+const dotenv = require('dotenv');
+const nodemailer = require('nodemailer');
+
+// Env variables ko load karne ke liye
+dotenv.config();
 
 const app = express();
 
-/* ========================
-   CORS (UPDATED - SIMPLE & OPEN)
-======================== */
+// Middlewares
 app.use(cors());
+app.use(express.json()); // Frontend se aane wale JSON data ko read karne ke liye
 
-// JSON middleware  
-app.use(express.json());
-
-/* ========================
-   MONGODB CONNECTION (SERVERLESS SAFE)
-======================== */
-// Serverless environments me connection re-use karna zaroori hai
-const connectDB = async () => {
-  if (mongoose.connection.readyState >= 1) {
-    return; // Agar pehle se connected hai toh dubara connect mat karo
-  }
-
-  if (!process.env.MONGO_URI) {
-    console.log("MONGO_URI missing in env variables");
-    return;
-  }
-
-  try {
-    await mongoose.connect(process.env.MONGO_URI);
-    console.log("MongoDB connected successfully");
-  } catch (err) {
-    console.error("MongoDB Connection Error:", err);
-  }
-};
-
-// Har request se pehle database connection check karne ke liye middleware
-app.use(async (req, res, next) => {
-  await connectDB();
-  next();
-});
-
-/* ========================
-   SCHEMA & MODEL
-======================== */
-// Serverless me model dubara compile hone par error deta hai, isliye yeh check zaroori hai
-const contactSchema = new mongoose.Schema({
-  name: String,
-  email: String,
-  message: String,
-  createdAt: {
-    type: Date,
-    default: Date.now
-  }
-});
-
-const Contact = mongoose.models.Contact || mongoose.model("Contact", contactSchema);
-
-/* ========================
-   ROUTES
-======================== */
-
-// Root route (test)
-app.get("/", (req, res) => {
-  res.json({ message: "Backend API working successfully!" });
-});
-
-// Projects route
-app.get("/projects", (req, res) => {
-  res.json([
-    {
-      title: "Portfolio Website",
-      description: "My personal portfolio"
-    },
-    {
-      title: "E-commerce App",
-      description: "React + Node project"
-    }
-  ]);
-});
-
-// Contact route
-app.post("/contact", async (req, res) => {
-  try {
-    const { name, email, message } = req.body;
-
-    // Choti si validation takki empty data save na ho
-    if (!name || !email || !message) {
-      return res.status(400).json({ message: "All fields are required" });
-    }
-
-    const newContact = new Contact({ name, email, message });
-    await newContact.save();
-
-    res.status(200).json({
-      message: "Message saved successfully"
-    });
-
-  } catch (error) {
-    console.error("Contact Error:", error);
-    res.status(500).json({
-      message: "Server Error",
-      error: error.message
-    });
-  }
-});
-
-// Agar local chal raha ho toh port listen karein
-if (process.env.NODE_ENV !== 'production') {
-  const PORT = process.env.PORT || 5000;
-  app.listen(PORT, () => {
-    console.log(`Server local port ${PORT} par active ho gaya hai!`);
-  });
+// MongoDB Connection (Agar use kar rahi hain)
+if (process.env.MONGO_URI) {
+    mongoose.connect(process.env.MONGO_URI)
+        .then(() => console.log("MongoDB Connected Successfully"))
+        .catch((err) => console.log("MongoDB Connection Error:", err));
 }
 
-/* ========================
-   EXPORT FOR VERCEL
-======================== */
+// Test Route
+app.get('/', (req, res) => {
+    res.json({ message: "Portfolio Backend is running successfully on Vercel!" });
+});
+
+// --- NODEMAILER CONTACT ROUTE ---
+app.post('/api/contact', async (req, res) => {
+    const { name, email, message } = req.body;
+
+    // Validation: Check agar user ne saari fields fill ki hain
+    if (!name || !email || !message) {
+        return res.status(400).json({ success: false, error: "Please fill all fields." });
+    }
+
+    try {
+        // 1. Email bhejne wale (Transporter) ki setting
+        const transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: {
+                user: process.env.EMAIL_USER, // Aapki Gmail id
+                pass: process.env.EMAIL_PASS  // Aapka Gmail App Password
+            }
+        });
+
+        // 2. Email ka content aur layout
+        const mailOptions = {
+            from: email, // Sender ka email (jo user form fill kar raha hai)
+            to: process.env.EMAIL_USER, // Jis par aapko mail chahiye (Aapki apni id)
+            subject: `New Portfolio Message from ${name}`,
+            text: `You have received a new message from your portfolio website.\n\nName: ${name}\nEmail: ${email}\nMessage: ${message}`,
+            html: `
+                <h3>New Portfolio Message</h3>
+                <p><strong>Name:</strong> ${name}</p>
+                <p><strong>Email:</strong> ${email}</p>
+                <p><strong>Message:</strong></p>
+                <p>${message}</p>
+            `
+        };
+
+        // 3. Email send karna
+        await transporter.sendMail(mailOptions);
+
+        // Success Response
+        return res.status(200).json({ success: true, message: "Email sent successfully!" });
+
+    } catch (error) {
+        console.error("Nodemailer Error:", error);
+        return res.status(500).json({ success: false, error: "Failed to send email. Try again later." });
+    }
+});
+
+
+// Local machine par chalane ke liye
+const PORT = process.env.PORT || 5000;
+if (process.env.NODE_ENV !== 'production') {
+    app.listen(PORT, () => {
+        console.log(`Server is running locally on port ${PORT}`);
+    });
+}
+
+// Vercel ke liye export
 module.exports = app;
