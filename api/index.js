@@ -9,11 +9,11 @@ dotenv.config();
 
 const app = express();
 
-// Middlewares
+//  MIDDLEWARES (Inka order sahi hona zaroori hai network error se bachne ke liye)
 app.use(cors());
-app.use(express.json()); // Frontend se aane wale JSON data ko read karne ke liye
+app.use(express.json()); 
 
-// MongoDB Connection (Agar use kar rahi hain)
+// MongoDB Connection
 if (process.env.MONGO_URI) {
     mongoose.connect(process.env.MONGO_URI)
         .then(() => console.log("MongoDB Connected Successfully"))
@@ -29,25 +29,24 @@ app.get('/', (req, res) => {
 app.post('/api/contact', async (req, res) => {
     const { name, email, message } = req.body;
 
-    // Validation: Check agar user ne saari fields fill ki hain
     if (!name || !email || !message) {
         return res.status(400).json({ success: false, error: "Please fill all fields." });
     }
 
     try {
-        // 1. Email bhejne wale (Transporter) ki setting
+        // 1. Email Transporter (Aapki .env ke mutabiq GMAIL_USER aur GMAIL_PASS use kiya hai)
         const transporter = nodemailer.createTransport({
             service: 'gmail',
             auth: {
-                user: process.env.EMAIL_USER, // Aapki Gmail id
-                pass: process.env.EMAIL_PASS  // Aapka Gmail App Password
+                user: process.env.GMAIL_USER, 
+                pass: process.env.GMAIL_PASS  
             }
         });
 
-        // 2. Email ka content aur layout
+        // 2. Email content setup
         const mailOptions = {
-            from: email, // Sender ka email (jo user form fill kar raha hai)
-            to: process.env.EMAIL_USER, // Jis par aapko mail chahiye (Aapki apni id)
+            from: email, 
+            to: process.env.GMAIL_USER, // Jis par aapko mail receive karni hai
             subject: `New Portfolio Message from ${name}`,
             text: `You have received a new message from your portfolio website.\n\nName: ${name}\nEmail: ${email}\nMessage: ${message}`,
             html: `
@@ -62,7 +61,6 @@ app.post('/api/contact', async (req, res) => {
         // 3. Email send karna
         await transporter.sendMail(mailOptions);
 
-        // Success Response
         return res.status(200).json({ success: true, message: "Email sent successfully!" });
 
     } catch (error) {
@@ -70,7 +68,6 @@ app.post('/api/contact', async (req, res) => {
         return res.status(500).json({ success: false, error: "Failed to send email. Try again later." });
     }
 });
-
 
 // Local machine par chalane ke liye
 const PORT = process.env.PORT || 5000;
