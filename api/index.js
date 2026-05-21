@@ -6,13 +6,9 @@ require("dotenv").config();
 const app = express();
 
 /* ========================
-   CORS (Vercel SAFE & OPTIMIZED)
+   CORS (UPDATED - SIMPLE & OPEN)
 ======================== */
-app.use(cors({
-  origin:"https://portfolio-backend-black-rho.vercel.app/",
-  methods: ["GET", "POST", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"]
-}));
+app.use(cors());
 
 // JSON middleware  
 app.use(express.json());
@@ -67,7 +63,7 @@ const Contact = mongoose.models.Contact || mongoose.model("Contact", contactSche
 
 // Root route (test)
 app.get("/", (req, res) => {
-  res.json({ message: "Backend API working" });
+  res.json({ message: "Backend API working successfully!" });
 });
 
 // Projects route
@@ -109,6 +105,14 @@ app.post("/contact", async (req, res) => {
     });
   }
 });
+
+// Agar local chal raha ho toh port listen karein
+if (process.env.NODE_ENV !== 'production') {
+  const PORT = process.env.PORT || 5000;
+  app.listen(PORT, () => {
+    console.log(`Server local port ${PORT} par active ho gaya hai!`);
+  });
+}
 
 /* ========================
    EXPORT FOR VERCEL
