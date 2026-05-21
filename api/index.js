@@ -9,12 +9,12 @@ const app = express();
    CORS (Vercel SAFE & OPTIMIZED)
 ======================== */
 app.use(cors({
-  origin: "https://portfolio-frontend-cyan-five.vercel.app",
+  origin:"https://portfolio-frontend-cyan-five.vercel.app",
   methods: ["GET", "POST", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"]
 }));
 
-// JSON middleware
+// JSON middleware  
 app.use(express.json());
 
 /* ========================
