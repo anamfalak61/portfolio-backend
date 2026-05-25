@@ -29,7 +29,7 @@ app.get('/', (req, res) => {
 });
 
 // PROJECTS ROUTE
-app.get('/api/projects', (req, res) => {
+app.get('/projects', (req, res) => {
   res.json([
     {
       title: 'Maryapp',
@@ -56,7 +56,7 @@ app.get('/api/projects', (req, res) => {
 });
 
 // CONTACT ROUTE
-app.post('/api/contact', async (req, res) => {
+app.post('/contact', async (req, res) => {
   const { name, email, message } = req.body;
 
   if (!name || !email || !message) {
@@ -107,6 +107,15 @@ Message: ${message}
       error: 'Failed to send email. Try again later.',
     });
   }
+});
+
+// Fallback for unmatched backend routes
+app.all('*', (req, res) => {
+  res.status(404).json({
+    success: false,
+    error: 'Not Found',
+    path: req.originalUrl,
+  });
 });
 
 // Local Server
