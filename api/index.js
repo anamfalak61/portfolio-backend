@@ -76,7 +76,8 @@ app.post('/contact', async (req, res) => {
     });
 
     const mailOptions = {
-      from: email,
+      from: process.env.GMAIL_USER,
+      replyTo: email,
       to: process.env.GMAIL_USER,
       subject: `New Portfolio Message from ${name}`,
       text: `
