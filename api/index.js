@@ -9,7 +9,23 @@ dotenv.config();
 const app = express();
 
 // Middlewares
-app.use(cors());
+const allowedOrigins = [
+  process.env.FRONTEND_URL,
+  'https://portfolio-frontend-o66we99rb-anamfalak61s-projects.vercel.app',
+  'http://localhost:3000',
+].filter(Boolean);
+
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+}));
+app.options('*', cors());
 app.use(express.json());
 
 // MongoDB Connection
