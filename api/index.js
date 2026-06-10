@@ -11,7 +11,7 @@ const app = express();
 // Middlewares
 const allowedOrigins = [
   process.env.FRONTEND_URL,
-  'https://portfolio-frontend-o66we99rb-anamfalak61s-projects.vercel.app',
+  'https://portfolio-frontend-cyan-five.vercel.app',
   'http://localhost:3000',
 ].filter(Boolean);
 
