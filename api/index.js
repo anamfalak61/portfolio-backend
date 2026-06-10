@@ -37,7 +37,7 @@ if (process.env.MONGO_URI) {
 }
 
 // Root Route
-app.get('/', (req, res) => {
+app.get(['/', '/api'], (req, res) => {
   res.json({
     success: true,
     message: 'Portfolio Backend is running successfully on Vercel!',
